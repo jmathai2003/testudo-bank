@@ -1603,6 +1603,7 @@ public void testTransferPaysOverdraftAndDepositsRemainder() throws SQLException,
             .cryptoTransactionTestType(CryptoTransactionTestType.BUY)
             .shouldSucceed(true)
             .build();
+    
     cryptoTransactionTester.test(cryptoTransactionEth);
 
     clearDB();
@@ -1641,6 +1642,32 @@ public void testTransferPaysOverdraftAndDepositsRemainder() throws SQLException,
             .cryptoTransactionTestType(CryptoTransactionTestType.SELL)
             .shouldSucceed(true)
             .build();
+
     cryptoTransactionTesterWithSol.test(cryptoTransactionSellSol);
+  }
+  /**
+   * Test that a customer cannot buy BTC and is returned the welcome page.
+   */
+  @Test
+  public void testBuyBTC() throws ScriptException {
+  CryptoTransactionTester cryptoTransactionTester = CryptoTransactionTester.builder()
+            .initialBalanceInDollars(1000)
+            .initialCryptoBalance(Collections.singletonMap("ETH", 0.0))
+            .build();
+
+  
+  cryptoTransactionTester.initialize();
+
+  CryptoTransaction cryptoTransaction = CryptoTransaction.builder()
+            .expectedEndingBalanceInDollars(1000)
+            .expectedEndingCryptoBalance(0)
+            .cryptoPrice(100)
+            .cryptoAmountToTransact(0.1)
+            .cryptoName("BTC")
+            .cryptoTransactionTestType(CryptoTransactionTestType.BUY)
+            .shouldSucceed(false)
+            .build();
+            
+  cryptoTransactionTester.test(cryptoTransaction);
   }
 }
