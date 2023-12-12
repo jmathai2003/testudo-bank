@@ -168,6 +168,12 @@ public class TestudoBankRepository {
     String cryptoHistorySql = "INSERT INTO CryptoHistory (CustomerID, Timestamp, Action, CryptoName, CryptoAmount) VALUES (?, ?, ?, ?, ?)";
     jdbcTemplate.update(cryptoHistorySql, customerID, timestamp, action, cryptoName, cryptoAmount);
   }
+  public static String getCustomerAccountType(JdbcTemplate jdbcTemplate, String customerID) {
+    String getCustomerAccountTypeSql = String.format("SELECT AccountType FROM Customers WHERE CustomerID='%s';", customerID);
+    String accountType = jdbcTemplate.queryForObject(getCustomerAccountTypeSql, String.class);
+    return accountType;
+}
+
   
   public static boolean doesCustomerExist(JdbcTemplate jdbcTemplate, String customerID) { 
     String getCustomerIDSql =  String.format("SELECT CustomerID FROM Customers WHERE CustomerID='%s';", customerID);

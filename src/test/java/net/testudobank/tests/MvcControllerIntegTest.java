@@ -1582,4 +1582,215 @@ public void testTransferPaysOverdraftAndDepositsRemainder() throws SQLException,
     cryptoTransactionTester.test(cryptoTransaction);
   }
 
+  /**
+   * Test that a customer with no cryptocurrency initially buying ETH, SOL, and then selling Sol.
+   */
+  @Test
+  public void testBuyEthBuySolSellSolUserFlow() throws ScriptException {
+    CryptoTransactionTester cryptoTransactionTester = CryptoTransactionTester.builder()
+            .initialBalanceInDollars(1000)
+            .initialCryptoBalance(Collections.singletonMap("ETH", 0.0))
+            .build();
+
+    cryptoTransactionTester.initialize();
+
+    CryptoTransaction cryptoTransactionEth = CryptoTransaction.builder()
+            .expectedEndingBalanceInDollars(900)
+            .expectedEndingCryptoBalance(1)
+            .cryptoPrice(100)
+            .cryptoAmountToTransact(1)
+            .cryptoName("ETH")
+            .cryptoTransactionTestType(CryptoTransactionTestType.BUY)
+            .shouldSucceed(true)
+            .build();
+    
+    cryptoTransactionTester.test(cryptoTransactionEth);
+
+    clearDB();
+
+    CryptoTransactionTester cryptoTransactionTesterWithEth = CryptoTransactionTester.builder()
+            .initialBalanceInDollars(900)
+            .initialCryptoBalance(Collections.singletonMap("ETH", 1.0))
+            .build();
+
+    cryptoTransactionTesterWithEth.initialize();
+    CryptoTransaction cryptoTransactionSol = CryptoTransaction.builder()
+            .expectedEndingBalanceInDollars(800)
+            .expectedEndingCryptoBalance(1)
+            .cryptoPrice(100)
+            .cryptoAmountToTransact(1)
+            .cryptoName("SOL")
+            .cryptoTransactionTestType(CryptoTransactionTestType.BUY)
+            .shouldSucceed(true)
+            .build();
+    cryptoTransactionTesterWithEth.test(cryptoTransactionSol);
+
+    clearDB();
+
+    CryptoTransactionTester cryptoTransactionTesterWithSol = CryptoTransactionTester.builder()
+            .initialBalanceInDollars(800)
+            .initialCryptoBalance(Collections.singletonMap("SOL", 1.0))
+            .build();
+
+    cryptoTransactionTesterWithSol.initialize();
+    CryptoTransaction cryptoTransactionSellSol = CryptoTransaction.builder()
+            .expectedEndingBalanceInDollars(900)
+            .expectedEndingCryptoBalance(0)
+            .cryptoPrice(100)
+            .cryptoAmountToTransact(1)
+            .cryptoName("SOL")
+            .cryptoTransactionTestType(CryptoTransactionTestType.SELL)
+            .shouldSucceed(true)
+            .build();
+
+    cryptoTransactionTesterWithSol.test(cryptoTransactionSellSol);
+  }
+  /**
+   * Test that a customer cannot buy BTC and is returned the welcome page.
+   */
+  @Test
+  public void testBuyBTC() throws ScriptException {
+  CryptoTransactionTester cryptoTransactionTester = CryptoTransactionTester.builder()
+            .initialBalanceInDollars(1000)
+            .initialCryptoBalance(Collections.singletonMap("ETH", 0.0))
+            .build();
+
+  
+  cryptoTransactionTester.initialize();
+
+  CryptoTransaction cryptoTransaction = CryptoTransaction.builder()
+            .expectedEndingBalanceInDollars(1000)
+            .expectedEndingCryptoBalance(0)
+            .cryptoPrice(100)
+            .cryptoAmountToTransact(1)
+            .cryptoName("BTC")
+            .cryptoTransactionTestType(CryptoTransactionTestType.BUY)
+            .shouldSucceed(false)
+            .build();
+
+  cryptoTransactionTester.test(cryptoTransaction);
+  }
+  /**
+   * Test that a customer cannot sell BTC and is returned the welcome page.
+   */
+  @Test
+  public void testSellBTC() throws ScriptException {
+  CryptoTransactionTester cryptoTransactionTester = CryptoTransactionTester.builder()
+            .initialBalanceInDollars(1000)
+            .initialCryptoBalance(Collections.singletonMap("ETH", 0.0))
+            .build();
+
+  
+  cryptoTransactionTester.initialize();
+
+  CryptoTransaction cryptoTransaction = CryptoTransaction.builder()
+            .expectedEndingBalanceInDollars(1000)
+            .expectedEndingCryptoBalance(0)
+            .cryptoPrice(100)
+            .cryptoAmountToTransact(1)
+            .cryptoName("BTC")
+            .cryptoTransactionTestType(CryptoTransactionTestType.SELL)
+            .shouldSucceed(false)
+            .build();
+            
+  cryptoTransactionTester.test(cryptoTransaction);
+  }
+
+
+
+@Test
+public void testInterestWithSufficientDeposit() throws SQLException, ScriptException {
+    String testUserID = "testuser";
+    String testUserPassword = "correctpassword";
+    String testUserFirstName = "Test";
+    String testUserLastName = "User";
+    int testUserBalance = MvcControllerIntegTestHelpers.convertDollarsToPennies(100.00); 
+    int testUserOverdraftBalance = 0;
+    int testUserNumFraudReversals = 0;
+    int testUserNumInterestDeposits = 5; 
+    String testUserAccountType = "SAVINGS"; 
+
+
+    MvcControllerIntegTestHelpers.addCustomerWithAccountTypeToDB(dbDelegate, testUserID, testUserPassword, testUserFirstName, testUserLastName, testUserBalance, testUserOverdraftBalance, testUserNumFraudReversals, testUserNumInterestDeposits, testUserAccountType);
+
+
+    User user = new User();
+    user.setUsername(testUserID);
+    user.setPassword(testUserPassword);
+    user.setAccountType(User.AccountType.SAVINGS);
+  }
+
+  @Test
+public void testPurchaseWithRoundUpFailure() throws SQLException, ScriptException {
+
+    String testUserID = "testuser";
+    String testUserPassword = "correctpassword";
+    String testUserFirstName = "Test";
+    String testUserLastName = "User";
+    int testUserBalance = MvcControllerIntegTestHelpers.convertDollarsToPennies(100.00); 
+    int testUserOverdraftBalance = 0;
+    int testUserNumFraudReversals = 0;
+    int testUserNumInterestDeposits = 5; 
+    String testUserAccountType = "SAVINGS"; 
+
+
+    MvcControllerIntegTestHelpers.addCustomerWithAccountTypeToDB(dbDelegate, testUserID, testUserPassword, testUserFirstName, testUserLastName, testUserBalance, testUserOverdraftBalance, testUserNumFraudReversals, testUserNumInterestDeposits, testUserAccountType);
+
+
+    User user = new User();
+    user.setUsername(testUserID);
+    user.setPassword(testUserPassword);
+    user.setAccountType(User.AccountType.SAVINGS);
+
+    double purchaseAmount = 20.50;
+    controller.makePurchase(testUserID, purchaseAmount); 
+
+
+    double checkingBalance = jdbcTemplate.queryForObject("SELECT Balance FROM CheckingAccounts WHERE CustomerID = ?", Double.class, testUserID);
+    double expectedBalanceAfterPurchase = initialCheckingBalance - purchaseAmount;
+    assertEquals(expectedBalanceAfterPurchase, checkingBalance, 0.01);
+}
+
+@Test
+public void testInterestAccrualNearMinimumBalance() throws SQLException, ScriptException {
+
+    String testUserID = "testuser";
+    String testUserPassword = "correctpassword";
+    String testUserFirstName = "Test";
+    String testUserLastName = "User";
+    int testUserBalance = MvcControllerIntegTestHelpers.convertDollarsToPennies(100.00); 
+    int testUserOverdraftBalance = 0;
+    int testUserNumFraudReversals = 0;
+    int testUserNumInterestDeposits = 5;
+    String testUserAccountType = "SAVINGS"; 
+
+
+    MvcControllerIntegTestHelpers.addCustomerWithAccountTypeToDB(dbDelegate, testUserID, testUserPassword, testUserFirstName, testUserLastName, testUserBalance, testUserOverdraftBalance, testUserNumFraudReversals, testUserNumInterestDeposits, testUserAccountType);
+
+
+    User user = new User();
+    user.setUsername(testUserID);
+    user.setPassword(testUserPassword);
+    user.setAccountType(User.AccountType.SAVINGS);
+    double minimumBalanceForInterest = 500.00; 
+
+
+    double balanceBelowMinimum = 499.99;
+    MvcControllerIntegTestHelpers.setSavingsAccountBalance(testUserID, balanceBelowMinimum);
+    controller.interestForSavings(); 
+
+    double balanceAfterInterestBelow = jdbcTemplate.queryForObject("SELECT Balance FROM SavingsAccounts WHERE CustomerID = ?", Double.class, testUserID);
+    assertEquals(balanceBelowMinimum, balanceAfterInterestBelow, 0.01); // Expecting no interest accrual
+
+
+    double balanceAboveMinimum = 500.01;
+    MvcControllerIntegTestHelpers.interestForSavings(testUserID, balanceAboveMinimum);
+    controller.interestForSavings(); 
+
+    double expectedBalanceAfterInterest = 10;
+    double balanceAfterInterestAbove = jdbcTemplate.queryForObject("SELECT Balance FROM SavingsAccounts WHERE CustomerID = ?", Double.class, testUserID);
+    assertEquals(expectedBalanceAfterInterest, balanceAfterInterestAbove, 0.01); 
+}
+
+  
 }
