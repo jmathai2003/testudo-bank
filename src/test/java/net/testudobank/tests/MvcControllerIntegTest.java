@@ -1695,4 +1695,102 @@ public void testTransferPaysOverdraftAndDepositsRemainder() throws SQLException,
             
   cryptoTransactionTester.test(cryptoTransaction);
   }
+
+
+
+@Test
+public void testInterestWithSufficientDeposit() throws SQLException, ScriptException {
+    String testUserID = "testuser";
+    String testUserPassword = "correctpassword";
+    String testUserFirstName = "Test";
+    String testUserLastName = "User";
+    int testUserBalance = MvcControllerIntegTestHelpers.convertDollarsToPennies(100.00); 
+    int testUserOverdraftBalance = 0;
+    int testUserNumFraudReversals = 0;
+    int testUserNumInterestDeposits = 5; 
+    String testUserAccountType = "SAVINGS"; 
+
+
+    MvcControllerIntegTestHelpers.addCustomerWithAccountTypeToDB(dbDelegate, testUserID, testUserPassword, testUserFirstName, testUserLastName, testUserBalance, testUserOverdraftBalance, testUserNumFraudReversals, testUserNumInterestDeposits, testUserAccountType);
+
+
+    User user = new User();
+    user.setUsername(testUserID);
+    user.setPassword(testUserPassword);
+    user.setAccountType(User.AccountType.SAVINGS);
+  }
+
+  @Test
+public void testPurchaseWithRoundUpFailure() throws SQLException, ScriptException {
+
+    String testUserID = "testuser";
+    String testUserPassword = "correctpassword";
+    String testUserFirstName = "Test";
+    String testUserLastName = "User";
+    int testUserBalance = MvcControllerIntegTestHelpers.convertDollarsToPennies(100.00); 
+    int testUserOverdraftBalance = 0;
+    int testUserNumFraudReversals = 0;
+    int testUserNumInterestDeposits = 5; 
+    String testUserAccountType = "SAVINGS"; 
+
+
+    MvcControllerIntegTestHelpers.addCustomerWithAccountTypeToDB(dbDelegate, testUserID, testUserPassword, testUserFirstName, testUserLastName, testUserBalance, testUserOverdraftBalance, testUserNumFraudReversals, testUserNumInterestDeposits, testUserAccountType);
+
+
+    User user = new User();
+    user.setUsername(testUserID);
+    user.setPassword(testUserPassword);
+    user.setAccountType(User.AccountType.SAVINGS);
+
+    double purchaseAmount = 20.50;
+    controller.makePurchase(testUserID, purchaseAmount); 
+
+
+    double checkingBalance = jdbcTemplate.queryForObject("SELECT Balance FROM CheckingAccounts WHERE CustomerID = ?", Double.class, testUserID);
+    double expectedBalanceAfterPurchase = initialCheckingBalance - purchaseAmount;
+    assertEquals(expectedBalanceAfterPurchase, checkingBalance, 0.01);
+}
+
+@Test
+public void testInterestAccrualNearMinimumBalance() throws SQLException, ScriptException {
+
+    String testUserID = "testuser";
+    String testUserPassword = "correctpassword";
+    String testUserFirstName = "Test";
+    String testUserLastName = "User";
+    int testUserBalance = MvcControllerIntegTestHelpers.convertDollarsToPennies(100.00); 
+    int testUserOverdraftBalance = 0;
+    int testUserNumFraudReversals = 0;
+    int testUserNumInterestDeposits = 5;
+    String testUserAccountType = "SAVINGS"; 
+
+
+    MvcControllerIntegTestHelpers.addCustomerWithAccountTypeToDB(dbDelegate, testUserID, testUserPassword, testUserFirstName, testUserLastName, testUserBalance, testUserOverdraftBalance, testUserNumFraudReversals, testUserNumInterestDeposits, testUserAccountType);
+
+
+    User user = new User();
+    user.setUsername(testUserID);
+    user.setPassword(testUserPassword);
+    user.setAccountType(User.AccountType.SAVINGS);
+    double minimumBalanceForInterest = 500.00; 
+
+
+    double balanceBelowMinimum = 499.99;
+    MvcControllerIntegTestHelpers.setSavingsAccountBalance(testUserID, balanceBelowMinimum);
+    controller.interestForSavings(); 
+
+    double balanceAfterInterestBelow = jdbcTemplate.queryForObject("SELECT Balance FROM SavingsAccounts WHERE CustomerID = ?", Double.class, testUserID);
+    assertEquals(balanceBelowMinimum, balanceAfterInterestBelow, 0.01); // Expecting no interest accrual
+
+
+    double balanceAboveMinimum = 500.01;
+    MvcControllerIntegTestHelpers.interestForSavings(testUserID, balanceAboveMinimum);
+    controller.interestForSavings(); 
+
+    double expectedBalanceAfterInterest = 10;
+    double balanceAfterInterestAbove = jdbcTemplate.queryForObject("SELECT Balance FROM SavingsAccounts WHERE CustomerID = ?", Double.class, testUserID);
+    assertEquals(expectedBalanceAfterInterest, balanceAfterInterestAbove, 0.01); 
+}
+
+  
 }
